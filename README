@@ -1,0 +1,20 @@
+The weights are very large so they were not included in the code submission:
+The weights to run this code can be downloaded from ... and put in the weights folder.
+This is necessary in order to run this code.
+
+# Run with e.g. python build_dataset.py -annotations or python build_dataset.py -train
+
+References :
+# Reference : https://towardsdatascience.com/object-detection-on-aerial-imagery-using-retinanet-626130ba2203
+# Modified the above code a lot to work for JSON coco annotations and EUROCITY instead of XML annotation
+
+
+COCO annotation types:
+https://www.immersivelimit.com/tutorials/create-coco-annotations-from-scratch/#coco-dataset-format
+
+https://towardsdatascience.com/image-data-labelling-and-annotation-everything-you-need-to-know-86ede6c684b1
+https://towardsdatascience.com/evaluating-performance-of-an-object-detection-model-
+The EuroCity Persons Dataset: A Novel Benchmark for Object Detection
+https://arxiv.org/pdf/1805.07193.pdf
+
+https://github.com/hasanirtiza/Pedestron

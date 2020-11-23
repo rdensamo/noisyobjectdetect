@@ -51,7 +51,7 @@ img_filename = "data/images/test.jpg"
 clearpath = r'D:\Computer Vision Project\GRAZ DATASET\Graz_01\persons\persons'
 
 noisypath = r'D:\Computer Vision Project\UG Dataset\RTTS\JPEGImages'
-europath = r'D:\Computer Vision Project\Eurocity Dataset\ECP\day\img\train\amsterdam'
+europath = r'D:\Computer Vision Project\Eurocity Dataset\ECP_day_img_train\ECP\day\img\train\amsterdam'
 #ug2path =
 
 def main():
@@ -70,7 +70,7 @@ def main():
         resized_frame = resize_image(image, (model_size[0], model_size[1]))
         pred = model.predict(resized_frame)
 
-        boxes, scores, classes, nums = output_boxes( \
+        boxes, scores, classes, nums = output_boxes(
             pred, model_size,
             max_output_size=max_output_size,
             max_output_size_per_class=max_output_size_per_class,

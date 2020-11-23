@@ -21,7 +21,9 @@ import numpy as np
 import cv2
 import time
 
+# The file utils.py contains useful functions for the implementation of YOLOv3
 
+# We resize the image to fit with the model’s size
 def resize_image(inputs, modelsize):
     inputs = tf.image.resize(inputs, modelsize)
     return inputs
@@ -62,12 +64,13 @@ def draw_outputs(img, boxes, objectness, classes, nums, class_names):
     return img
 
 
+# The following is the code for function load_class_names
 def load_class_names(file_name):
     with open(file_name, 'r') as f:
         class_names = f.read().splitlines()
     return class_names
 
-
+#  we leverage the TensorFlow’s built-in NMS function, tf.image.combined_non_max_suppression.
 def non_max_suppression(inputs, model_size, max_output_size,
                         max_output_size_per_class, iou_threshold, confidence_threshold):
     bbox, confs, class_probs = tf.split(inputs, [4, 1, -1], axis=-1)

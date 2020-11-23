@@ -25,6 +25,11 @@ physical_devices = tf.config.experimental.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
 '''
+
+'''
+used to parse the YOLOv3 configuration file yolov3.cfg.
+The file yolov3.cfg contains all information related to the YOLOv3 architecture and its parameters
+'''
 def parse_cfg(cfgfile):
     with open(cfgfile, 'r') as file:
         lines = [line.rstrip('\n') for line in file if line != '\n' and line[0] != '#']
@@ -41,8 +46,14 @@ def parse_cfg(cfgfile):
     blocks.append(holder)
     return blocks
 
+'''
+Building the YOLOv3 Network:
+the code for the YOLOv3 network function, called the YOLOv3Net
 
+'''
 def YOLOv3Net(cfgfile, model_size, num_classes):
+    #  first call the function parse_cfg() and store all the return attributes in a variable blocks.
+    #  the variable blocks contains all the attributes read from the file yolov3.cfg.
     blocks = parse_cfg(cfgfile)
 
     outputs = {}
@@ -51,18 +62,32 @@ def YOLOv3Net(cfgfile, model_size, num_classes):
     out_pred = []
     scale = 0
 
+    #  define the input model using Keras function and divided by 255 to normalize it to the range of 0–1.
     inputs = input_image = Input(shape=model_size)
     inputs = inputs / 255.0
 
+    # performs an iteration over the list blocks.
+    # For every iteration, we check the type of the block which corresponds to the type of layer.
     for i, block in enumerate(blocks[1:]):
+        # YOLOv3 has 5 layers types in general,
+        # they are: “convolutional layer”, “upsample layer”, “route layer”, “shortcut layer”, and “yolo layer”
+
         # If it is a convolutional layer
-        if (block["type"] == "convolutional"):
+        '''
+        there are 2 convolutional layer types, i.e with and without batch normalization layer. 
+        The convolutional layer followed by a batch normalization layer uses a leaky ReLU 
+        activation layer, otherwise, it uses the linear activation. So, we must handle them 
+        for every single iteration we perform.
+        '''
+        if block["type"] == "convolutional":
 
             activation = block["activation"]
             filters = int(block["filters"])
             kernel_size = int(block["size"])
             strides = int(block["stride"])
 
+            # verify whether the stride is greater than 1,
+            # if it is true, then downsampling is performed, so we need to adjust the padding.
             if strides > 1:
                 inputs = ZeroPadding2D(((1, 0), (1, 0)))(inputs)
 
@@ -100,6 +125,7 @@ def YOLOv3Net(cfgfile, model_size, num_classes):
             inputs = outputs[i - 1] + outputs[i + from_]
 
         # Yolo detection layer
+        # Here, we perform our detection and do some refining to the bounding boxes
         elif block["type"] == "yolo":
 
             mask = block["mask"].split(",")
@@ -112,15 +138,19 @@ def YOLOv3Net(cfgfile, model_size, num_classes):
             n_anchors = len(anchors)
 
             out_shape = inputs.get_shape().as_list()
-
+            # we need to reshape the YOLOv3 output to the form of
+            # [None, B * grid size * grid size, 5 + C]. The B is the number of anchors
+            # and C is the number of classes.
             inputs = tf.reshape(inputs, [-1, n_anchors * out_shape[1] * out_shape[2], \
                                          5 + num_classes])
 
+            # Then access all boxes attributes by this way:
             box_centers = inputs[:, :, 0:2]
             box_shapes = inputs[:, :, 2:4]
             confidence = inputs[:, :, 4:5]
             classes = inputs[:, :, 5:num_classes + 5]
 
+            # we need to refine them in order to the have the right positions and shapes.
             box_centers = tf.sigmoid(box_centers)
             confidence = tf.sigmoid(confidence)
             classes = tf.sigmoid(classes)
@@ -131,6 +161,7 @@ def YOLOv3Net(cfgfile, model_size, num_classes):
             x = tf.range(out_shape[1], dtype=tf.float32)
             y = tf.range(out_shape[2], dtype=tf.float32)
 
+            # Use a meshgrid to convert the relative positions of the center boxes into the real positions.
             cx, cy = tf.meshgrid(x, y)
             cx = tf.reshape(cx, (-1, 1))
             cy = tf.reshape(cy, (-1, 1))
@@ -142,17 +173,24 @@ def YOLOv3Net(cfgfile, model_size, num_classes):
                        input_image.shape[2] // out_shape[2])
             box_centers = (box_centers + cxy) * strides
 
+            # Then, concatenate them all together.
             prediction = tf.concat([box_centers, box_shapes, confidence, classes], axis=-1)
 
+            '''
+            YOLOv3 does 3 predictions across the scale.
+            Take the prediction result for each scale and concatenate it with the others.
+            '''
             if scale:
                 out_pred = tf.concat([out_pred, prediction], axis=1)
             else:
                 out_pred = prediction
                 scale = 1
-
+        #  the route and shortcut layers need output feature maps from previous layers,
+        #  so for every iteration, we always keep the track of the feature maps and output filters.
         outputs[i] = inputs
         output_filters.append(filters)
 
+    # Return our model
     model = Model(input_image, out_pred)
     model.summary()
     return model
