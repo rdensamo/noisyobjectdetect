@@ -1,3 +1,6 @@
+# Reference : https://towardsdatascience.com/object-detection-on-aerial-imagery-using-retinanet-626130ba2203
+# Modified the above code a lot to work for JSON coco annotations and EUROCITY instead of XML annotation
+
 # *** Python script to create the train/test set ***
 
 # import the necessary packages
@@ -26,7 +29,7 @@ val_jsons = 'D:/Computer Vision Project/Eurocity Dataset/ECP_day_img_val/ECP/day
 annot_val_path = 'D:/Computer Vision Project/Eurocity Dataset/ECP_day_labels_val/ECP/day/labels/val'
 '''
 
-print(train_jsons)
+# print(train_jsons)
 
 trainImagePaths = list(paths.list_files(train_jsons))
 valImagePaths = list(paths.list_files(val_jsons))
@@ -36,15 +39,21 @@ valImageLabels = list(paths.list_files(annot_val_path))
 # for a in trainImageLabels:
 #    print(a)
 
+train_csv_path_out = Path("D:/Computer Vision Project/Eurocity Dataset/OUTPUT/Train")
+val_csv_path_out = Path("D:/Computer Vision Project/Eurocity Dataset/OUTPUT/Validation")
 # create the list of datasets to build
-dataset = [("train", trainImagePaths, train_jsons),
-           ("test", valImagePaths, val_jsons)]
+dataset = [("train", trainImagePaths, train_csv_path_out),
+           ("test", valImagePaths, val_csv_path_out)]
 
 # initialize the set of classes we have
 CLASSES = set()
-
+count = 0
 # loop over the datasets
 for (dType, imagePaths, outputCSV) in dataset:
+    count += 1
+    if count > 1 :
+        # TODO: only one to do for training for now
+        break
     # load the contents
     print("[INFO] creating '{}' set...".format(dType))
     print("[INFO] {} total images in '{}' set".format(len(imagePaths), dType))
@@ -56,7 +65,7 @@ for (dType, imagePaths, outputCSV) in dataset:
     # loop over the image paths
     for imagePath in imagePaths:
         # open the output CSV file
-#        csv = open(outputCSV, "w")
+        # csv = open(outputCSV, "w")
 
         '''
          Loop over each dataset (train and test) and open the output CSV file to be written.
@@ -69,7 +78,8 @@ for (dType, imagePaths, outputCSV) in dataset:
         fname = imagePath.split(os.path.sep)[-1]
         fname = "{}.json".format(fname[:fname.rfind(".")])
         # annotPath = os.path.sep.join([annot_train_path, fname])
-        # print(annotPath)
+        # print(imagePath)
+        # print(fname)
 
         # Already can created above :
         trainImageLabels
@@ -134,14 +144,17 @@ for (dType, imagePaths, outputCSV) in dataset:
                 xMax.append(xMax_i)
                 yMax.append(yMax_i)
 
-                imagePath = ""
-                row = [os.path.abspath(imagePath), str(xMin), str(yMin), str(xMax),
+
+            # File will hold all the annotations for training in the following format:
+            # <path/to/image>,<xmin>,<ymin>,<xmax>,<ymax>,<label>
+
+            row = [jsonlabelfile, str(xMin), str(yMin), str(xMax),
                        str(yMax), str(label)]
+            print("row is ", row)
 
-                # update the set of unique class labels
-                CLASSES.add(label_i)
+            # update the set of unique class labels
+            CLASSES.add(label_i)
 
-                # break
 
             ''' 
             print(label)
@@ -150,7 +163,7 @@ for (dType, imagePaths, outputCSV) in dataset:
             '''
             break
         break
-    print("unique classes ", CLASSES)
+    # print("unique classes ", CLASSES)
     print("end")
 
 #            csv.write("{}\n".format(",".join(row)))
