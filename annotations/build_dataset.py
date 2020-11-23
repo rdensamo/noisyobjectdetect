@@ -12,6 +12,7 @@ import os
 import json
 import pprint
 from pathlib import Path
+import csv
 
 annot_train_path = Path("D:/Computer Vision Project/Eurocity Dataset/ECP_day_labels_train/ECP/day/labels/train")
 annot_val_path = Path("D:/Computer Vision Project/Eurocity Dataset/ECP_day_labels_val/ECP/day/labels/val")
@@ -47,11 +48,12 @@ dataset = [("train", trainImagePaths, train_csv_path_out),
 
 # initialize the set of classes we have
 CLASSES = set()
+
 count = 0
 # loop over the datasets
 for (dType, imagePaths, outputCSV) in dataset:
     count += 1
-    if count > 1 :
+    if count > 1:
         # TODO: only one to do for training for now
         break
     # load the contents
@@ -63,7 +65,13 @@ for (dType, imagePaths, outputCSV) in dataset:
     # print("length of imagepath", len(imagePaths))
 
     # loop over the image paths
+    k = 0
+    outputCSV = Path(str(train_csv_path_out) + "/train.csv")
+    objectsInImage = list()
+    classes_csv = Path(str(train_csv_path_out) + "/classes.csv")
+
     for imagePath in imagePaths:
+
         # open the output CSV file
         # csv = open(outputCSV, "w")
 
@@ -78,7 +86,7 @@ for (dType, imagePaths, outputCSV) in dataset:
         fname = imagePath.split(os.path.sep)[-1]
         fname = "{}.json".format(fname[:fname.rfind(".")])
         # annotPath = os.path.sep.join([annot_train_path, fname])
-        # print(imagePath)
+        # print("imagepath: ", imagePath)
         # print(fname)
 
         # Already can created above :
@@ -88,28 +96,28 @@ for (dType, imagePaths, outputCSV) in dataset:
         # extract the image dimensions
         w = 0
         h = 0
+        label = list()
+        xMin = list()
+        yMin = list()
+        xMax = list()
+        yMax = list()
 
-        for jsonlabelfile in trainImageLabels:
-            # print(jsonlabelfile)
-            with open(jsonlabelfile, 'r') as COCO:
-                coco = json.loads(COCO.read())
-                imageHeight = int(json.dumps(coco['imageheight']))
-                imageWidth = int(json.dumps(coco['imagewidth']))
-                # print(imageHeight)
-                if imageHeight != h or imageWidth != w:
-                    h = imageHeight
-                    w = imageWidth
+        # for jsonlabelfile in trainImageLabels:
+        # print(jsonlabelfile)
+        with open(trainImageLabels[k], 'r') as COCO:
+            coco = json.loads(COCO.read())
+            imageHeight = int(json.dumps(coco['imageheight']))
+            imageWidth = int(json.dumps(coco['imagewidth']))
+            # print(imageHeight)
+            if imageHeight != h or imageWidth != w:
+                h = imageHeight
+                w = imageWidth
             ''' For every image, find all the objects and iterate over each one of them. Then, find the bounding box (
             xmin, ymin, xmax, ymax) and the class label (name) for each object in the annotation. Do a cleanup by 
             truncating any bounding box coordinate that falls outside the boundaries of the image. Also, do a sanity 
             check if, by error, any minimum value is larger than the maximum value and vice-versa. If we find such 
             values, we will ignore these objects and continue to the next one. 
             '''
-            label = list()
-            xMin = list()
-            yMin = list()
-            xMax = list()
-            yMax = list()
 
             # loop over all child elements
             # print("line 97 ", len(coco['children']))
@@ -121,7 +129,6 @@ for (dType, imagePaths, outputCSV) in dataset:
                 yMin_i = int(float(coco['children'][i]['x1']))
                 xMax_i = int(float(coco['children'][i]['x1']))
                 yMax_i = int(float(coco['children'][i]['y1']))
-
 
                 # truncate any bounding box coordinates that fall outside
                 # the boundaries of the image
@@ -137,44 +144,50 @@ for (dType, imagePaths, outputCSV) in dataset:
                     continue
                 elif xMax_i <= xMin_i or yMax_i <= yMin_i:
                     continue
-                '''
+             
                 label.append(label_i)
                 xMin.append(xMin_i)
                 yMin.append(yMin_i)
                 xMax.append(xMax_i)
                 yMax.append(yMax_i)
+                '''
+                # update the set of unique class labels
+                CLASSES.add(label_i)
+
+                # File will hold all the annotations for training in the following format:
+                # <path/to/image>,<xmin>,<ymin>,<xmax>,<ymax>,<label>
+                row = [imagePath, str(xMin_i), str(yMin_i), str(xMax_i),
+                       str(yMax_i), str(label_i)]
+                objectsInImage.append(row)
+                print("row is ", row)
+
+                # csv = open(outputCSV, "w")
+            k += 1
+
+        # print("objects ", objectsInImage)
+        # print("out: ", outputCSV)
+
+    with open(outputCSV, 'w', newline='') as csvfile:
+        fieldnames = ['path', 'xmin', 'ymin', 'xmax', 'ymax', 'label']
+        writer = csv.writer(csvfile, delimiter=',')
+
+        # writer.writeheader(fieldnames)
+        writer.writerows(objectsInImage)
 
 
-            # File will hold all the annotations for training in the following format:
-            # <path/to/image>,<xmin>,<ymin>,<xmax>,<ymax>,<label>
+        # break
+        # break
+        # break
+    print("unique classes ", list(CLASSES))
+    # write the classes to file
+    print("[INFO] writing classes...")
+    with open(classes_csv, 'w', newline='') as csvfile:
+        # rows = [",".join([c, str(i)]) for (i, c) in enumerate(CLASSES)]
+        writer = csv.writer(csvfile)
+        for item in list(CLASSES):
+            writer.writerow([item])
 
-            row = [jsonlabelfile, str(xMin), str(yMin), str(xMax),
-                       str(yMax), str(label)]
-            print("row is ", row)
-
-            # update the set of unique class labels
-            CLASSES.add(label_i)
-
-
-            ''' 
-            print(label)
-            print(xMin)
-            print(xMax)
-            '''
-            break
-        break
-    # print("unique classes ", CLASSES)
     print("end")
 
-#            csv.write("{}\n".format(",".join(row)))
-
-
-
-        # close the CSV file
-        # csv.close()
-
-
-
-
-
-
+# close the CSV file
+# csv.close()
