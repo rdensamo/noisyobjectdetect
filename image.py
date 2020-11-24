@@ -22,8 +22,10 @@ import cv2
 import numpy as np
 from yolov3 import YOLOv3Net
 from imutils import paths
+from pathlib import Path
+import csv
 
-# TODO: i dont know what this does but commenting out this part made the code work
+# TODO: I do not know what this part does but commenting out this part made the code work
 # now do this on images in multiple images in euro and ug2 dataset - the way Hog happened
 # should classify what the difference in accuracy this implementation has over HOG to
 # support why you went with this. Probably might not tell the whole story b/c HOG would have good
@@ -52,7 +54,9 @@ clearpath = r'D:\Computer Vision Project\GRAZ DATASET\Graz_01\persons\persons'
 
 noisypath = r'D:\Computer Vision Project\UG Dataset\RTTS\JPEGImages'
 europath = r'D:\Computer Vision Project\Eurocity Dataset\ECP_day_img_train\ECP\day\img\train\amsterdam'
-#ug2path =
+
+
+# ug2path =
 
 def main():
     model = YOLOv3Net(cfgfile, model_size, num_classes)
@@ -79,6 +83,40 @@ def main():
 
         image = np.squeeze(image)
         img = draw_outputs(image, boxes, scores, classes, nums, class_names)
+        # TODO: need to write this part out into csv file to calculate mAP later for a baseline
+        # Reference: https://stackoverflow.com/questions/48343678/store-tensorflow-object-detection-api-image-output-with-boxes-in-csv-format
+        # print(boxes)
+        # get dimensions of image
+        dimensions = image.shape
+        height = image.shape[0]
+        width = image.shape[1]
+        box2 = [0, 0, 0, 0]
+        i = 0
+        box2es = list()
+        for box in np.squeeze(boxes):
+            # The coordinates in the boxes array ([ymin, xmin, ymax, xmax]) are normalized
+            box2[0] = box[0] * height  # ymin
+            box2[1] = box[1] * width  # xmin
+            box2[2] = box[2] * height  # ymax
+            box2[3] = box[3] * width  # xmax
+            # to put them in same order as the actual label box dimensions
+            #  fieldnames = ['path', 'xmin', 'ymin', 'xmax', 'ymax', 'label']
+            print("box2 is ", [imagePath, box2[1], box2[0], box2[3], box2[2], class_names[i]])
+            if (str(class_names[i]) == str("person")) and (int(box2[0]) != 0 or int(box2[1]) != 0 or int(box2[2]) != 0 or int(box2[3]) != 0) :
+                box2es.append([imagePath, box2[1], box2[0], box2[3], box2[2], class_names[i]])
+            i += 1
+
+            yolo_pred_train = Path("D:/Computer Vision Project/Eurocity Dataset/OUTPUT/Train/yolo_pred_train.csv")
+
+        with open(yolo_pred_train, 'a+', newline='') as csvfile:
+            fieldnames = ['path', 'xmin', 'ymin', 'xmax', 'ymax', 'label']
+            writer = csv.writer(csvfile, delimiter=',')
+            # writer.writeheader(fieldnames)
+            writer.writerows(box2es)
+
+
+
+        # np.savetxt(yolo_pred_train, box2, delimiter=',')
 
         win_name = 'Image detection'
         cv2.imshow(win_name, img)

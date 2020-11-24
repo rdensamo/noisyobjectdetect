@@ -20,15 +20,7 @@ annot_val_path = Path("D:/Computer Vision Project/Eurocity Dataset/ECP_day_label
 train_jsons = Path("D:/Computer Vision Project/Eurocity Dataset/ECP_day_img_train/ECP/day/img/train")
 val_jsons = Path("D:/Computer Vision Project/Eurocity Dataset/ECP_day_img_val/ECP/day/img/val")
 
-''' 
-# Create easy variable names for all the arguments
-annot_train_path = 'D:/Computer Vision Project/Eurocity Dataset/ECP_day_labels_train/ECP/day/labels/train'
-train_jsons = 'D:/Computer Vision Project/Eurocity Dataset/ECP_day_img_train/ECP/day/img/train'
-# For me this is the validation images because the test data for Eurocity did not have labels
-# val_jsons = "D:\Computer Vision Project\Eurocity Dataset\ECP_day_img_val\ECP\day\img\val"
-val_jsons = 'D:/Computer Vision Project/Eurocity Dataset/ECP_day_img_val/ECP/day/img/val'
-annot_val_path = 'D:/Computer Vision Project/Eurocity Dataset/ECP_day_labels_val/ECP/day/labels/val'
-'''
+
 
 # print(train_jsons)
 
